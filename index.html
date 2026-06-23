@@ -6,6 +6,7 @@
 <title>MatExame 12 — Preparação para o Exame Nacional</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <style>
   :root {
     --navy: #0A1628;
@@ -23,6 +24,60 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── MOBILE MENU BTN ── */
+  .menu-toggle {
+    display: none;
+    background: none; border: 1px solid var(--border);
+    color: var(--text); width: 36px; height: 36px;
+    border-radius: 8px; cursor: pointer; font-size: 18px;
+    align-items: center; justify-content: center;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .menu-toggle { display: flex; }
+
+    header { padding: 0 14px; }
+    .logo { font-size: 16px; }
+    .logo span { display: none; }
+    #progress-bar-wrap { width: 100px; }
+
+    .sidebar {
+      position: fixed; top: 60px; left: 0; bottom: 0;
+      z-index: 200; transform: translateX(-100%);
+      transition: transform .25s ease;
+      width: 260px; min-width: 260px;
+    }
+    .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.5); }
+
+    .main { width: 100%; }
+
+    #learn-panel, #practice-panel, #exam-panel { padding: 16px; }
+
+    .content-card { padding: 18px; }
+    .topic-title { font-size: 20px; }
+
+    .props-grid { grid-template-columns: 1fr; }
+
+    .content-topbar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .action-btns { flex-wrap: wrap; }
+
+    .chat-messages { padding: 12px 14px; }
+    .chat-input-wrap { padding: 10px 14px; }
+    .msg { max-width: 95%; }
+
+    .mode-btn { padding: 5px 10px; font-size: 11px; }
+
+    .question-card { padding: 18px; }
+    .score-card { padding: 24px 16px; }
+    .score-big { font-size: 48px; }
+
+    .welcome-card { padding: 24px 16px; }
+    .welcome-card h1 { font-size: 22px; }
+
+    .header-right { gap: 8px; }
+  }
 
   body {
     font-family: 'Space Grotesk', sans-serif;
@@ -186,6 +241,30 @@
     border-radius: 10px; padding: 14px 16px; text-align: center;
   }
   .prop-card .prop-name { font-size: 10px; color: var(--indigo-light); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+
+  /* ── GRAPH ── */
+  .graph-container {
+    background: var(--navy-card);
+    border: 1px solid var(--indigo);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .graph-label {
+    padding: 8px 16px;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--indigo-light);
+    background: rgba(99,102,241,.08);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .graph-desc {
+    padding: 10px 16px;
+    font-size: 13px; color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  #desmos-calc { width: 100%; height: 320px; }
 
   /* AI LOADING */
   .ai-loading { display: flex; gap: 6px; align-items: center; padding: 8px 0; }
@@ -392,7 +471,10 @@
 <body>
 
 <header>
-  <div class="logo">MatExame 12 <span>Exame Nacional · 12ª Classe</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="menu-toggle" onclick="toggleSidebar()" id="menuToggle">☰</button>
+    <div class="logo">MatExame 12 <span>Exame Nacional · 12ª Classe</span></div>
+  </div>
   <div class="header-right">
     <div id="progress-bar-wrap" title="Tópicos estudados">
       <div id="progress-bar"></div>
@@ -514,6 +596,19 @@
 </div>
 
 <script>
+// ─── MOBILE SIDEBAR ──────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  sidebar.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const sidebar = document.querySelector('.sidebar');
+  const toggle = document.getElementById('menuToggle');
+  if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle) {
+    sidebar.classList.remove('open');
+  }
+});
+
 // ─── STATE ───────────────────────────────────────────────
 let currentTopic = null;
 let currentMode = 'learn';
@@ -1013,8 +1108,8 @@ async function generatePractice() {
         max_tokens: 1000,
         messages: [{ role: 'user', content: `Gera 3 exercícios de matemática do 12º ano angolano sobre o tópico: "${topicData.title}".
 Responde APENAS em JSON válido, sem texto antes ou depois, sem \`\`\`json. Formato:
-{"questions":[{"q":"texto da pergunta (usa notacao matematica simples, ex: x^2, sqrt(x), log_2(x))","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"passo 1: ... passo 2: ... resultado: ..."}]}
-correct é o índice (0=A,1=B,2=C,3=D). Exercícios progressivos, com dificuldade crescente.` }]
+{"questions":[{"q":"texto da pergunta (usa notação LaTeX com \\( \\) para fórmulas inline, ex: \\(x^2\\), \\(\\sqrt{x}\\), \\(\\log_2 x\\))","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"passo 1: ... passo 2: ... resultado: ..."}]}
+correct é o índice (0=A,1=B,2=C,3=D). Exercícios progressivos, com dificuldade crescente. USA SEMPRE LaTeX para fórmulas.` }]
       })
     });
     const data = await res.json();
@@ -1024,6 +1119,7 @@ correct é o índice (0=A,1=B,2=C,3=D). Exercícios progressivos, com dificuldad
     practiceQuestions = parsed.questions;
     practiceCurrent = 0; practiceScore = 0;
     renderPracticeQuestion();
+    MathJax.typesetPromise([document.getElementById('practice-content')]).catch(()=>{});
   } catch(e) {
     container.innerHTML = `<div class="question-card"><p style="color:var(--rose)">Erro ao gerar exercícios. Verifica a ligação.</p><button class="restart-btn" onclick="generatePractice()">Tentar novamente</button></div>`;
   }
@@ -1084,8 +1180,8 @@ async function startExam() {
         max_tokens: 1000,
         messages: [{ role: 'user', content: `Gera 10 perguntas de simulação de exame nacional de Matemática 12ª classe angolana, cobrindo estes tópicos: ${topics}.
 Responde APENAS JSON válido, sem texto antes ou depois:
-{"questions":[{"q":"pergunta","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"solução curta"}]}
-correct é índice 0-3. Varia a dificuldade, inclui pelo menos 2 de logaritmos, 2 de derivadas, 2 de exponenciais.` }]
+{"questions":[{"q":"pergunta com LaTeX usando \\( \\) para fórmulas inline","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"solução curta com LaTeX"}]}
+correct é índice 0-3. Varia a dificuldade, inclui pelo menos 2 de logaritmos, 2 de derivadas, 2 de exponenciais. USA SEMPRE LaTeX para fórmulas.` }]
       })
     });
     const data = await res.json();
@@ -1148,6 +1244,58 @@ function finishExam() {
   </div>`;
 }
 
+// ─── DESMOS GRAPHS ─────────────────────────────────────────
+let desmosCalc = null;
+
+function renderGraph(expressions, description) {
+  // Remove gráfico anterior se existir
+  const old = document.getElementById('graph-msg');
+  if (old) old.remove();
+
+  const graphId = 'graph-msg';
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.id = graphId;
+  el.innerHTML = `
+    <div class="msg-bubble" style="padding:0;overflow:hidden;min-width:280px;width:100%;max-width:520px;">
+      <div class="graph-container" style="margin:0;border-radius:0;">
+        <div class="graph-label">📈 Gráfico Interactivo</div>
+        <div id="desmos-calc"></div>
+        <div class="graph-desc">${description}</div>
+      </div>
+    </div>
+    <span class="msg-time">Professor IA · Gráfico</span>
+  `;
+  document.getElementById('chat-messages').appendChild(el);
+  el.scrollIntoView({behavior:'smooth'});
+
+  setTimeout(() => {
+    const calcEl = document.getElementById('desmos-calc');
+    if (!calcEl) return;
+    if (desmosCalc) desmosCalc.destroy();
+    desmosCalc = Desmos.GraphingCalculator(calcEl, {
+      expressions: true,
+      settingsMenu: false,
+      zoomButtons: true,
+      border: false,
+      backgroundColor: '#111F36',
+      textColor: '#F0F4FF',
+    });
+    expressions.forEach((expr, i) => {
+      desmosCalc.setExpression({ id: 'g'+i, latex: expr.latex, color: expr.color || '#818CF8' });
+    });
+  }, 100);
+}
+
+function parseGraphFromResponse(reply) {
+  // Detecta bloco JSON de gráfico na resposta: [GRAPH]...[/GRAPH]
+  const match = reply.match(/\[GRAPH\]([\s\S]*?)\[\/GRAPH\]/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1].trim());
+  } catch(e) { return null; }
+}
+
 // ─── CHAT ──────────────────────────────────────────────────
 async function sendChat() {
   const input = document.getElementById('chat-input');
@@ -1161,14 +1309,31 @@ async function sendChat() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: `És um professor de Matemática da 12ª classe angolana. Ensinas de forma clara, usando exemplos passo a passo. Os tópicos do programa são: PEMDAS, potenciação, funções e equações exponenciais, logaritmos e suas propriedades, mudança de base, função logarítmica, equações e inequações logarítmicas, derivadas, regras de derivação, derivadas de funções transcendentes, números complexos, estatística. Usa notação matemática clara. Sê conciso mas completo. Escreve fórmulas em LaTeX com \\( \\) para inline e \\[ \\] para display.\n\nPergunta do estudante: ${msg}` }]
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: `És um professor de Matemática da 12ª classe angolana. Ensinas de forma clara, usando exemplos passo a passo. Os tópicos do programa são: PEMDAS, potenciação, funções e equações exponenciais, logaritmos e suas propriedades, mudança de base, função logarítmica, equações e inequações logarítmicas, derivadas, regras de derivação, derivadas de funções transcendentes, números complexos, estatística. Usa notação matemática clara. Sê conciso mas completo. Escreve SEMPRE fórmulas em LaTeX com \\( \\) para inline e \\[ \\] para display.
+
+IMPORTANTE: Se a pergunta envolver uma função que pode ser visualizada graficamente (ex: funções exponenciais, logarítmicas, derivadas, polinomiais), inclui NO FINAL da tua resposta um bloco JSON com este formato exacto:
+[GRAPH]{"expressions":[{"latex":"expressao_desmos","color":"#818CF8"},{"latex":"expressao2","color":"#F59E0B"}],"description":"Explicação breve do que o gráfico mostra"}[/GRAPH]
+
+Usa sintaxe Desmos para LaTeX (ex: e^x, \\ln(x), x^2, \\sqrt{x}). Só inclui o bloco GRAPH se fizer sentido visualizar a função.
+
+Pergunta do estudante: ${msg}` }]
       })
     });
     const data = await res.json();
-    const reply = data.content.map(i=>i.text||'').join('');
-    updateMsg(loadId, reply);
+    let reply = data.content.map(i=>i.text||'').join('');
+
+    // Extrai e remove o bloco de gráfico da resposta de texto
+    const graphData = parseGraphFromResponse(reply);
+    const cleanReply = reply.replace(/\[GRAPH\][\s\S]*?\[\/GRAPH\]/g, '').trim();
+
+    updateMsg(loadId, cleanReply);
     MathJax.typesetPromise([document.getElementById(loadId)]).catch(()=>{});
+
+    // Renderiza gráfico se existir
+    if (graphData && graphData.expressions) {
+      renderGraph(graphData.expressions, graphData.description || '');
+    }
   } catch(e) {
     updateMsg(loadId, 'Erro ao conectar com a IA. Verifica a ligação e tenta novamente.');
   }
@@ -1210,20 +1375,57 @@ function loadTopic(key) {
   }
 }
 
+// Gráficos por tópico
+const TOPIC_GRAPHS = {
+  func_exponencial: { expressions: [{latex:'e^x',color:'#818CF8'},{latex:'2^x',color:'#F59E0B'},{latex:'0.5^x',color:'#10B981'}], description:'Comparação: eˣ (roxo), 2ˣ (dourado) e (0.5)ˣ (verde). Nota como bases >1 crescem e bases <1 decrescem.' },
+  eq_exponencial:   { expressions: [{latex:'2^x',color:'#818CF8'},{latex:'y=8',color:'#F43F5E'}], description:'Gráfico de 2ˣ e a linha y=8. A solução de 2ˣ=8 é o ponto de intersecção (x=3).' },
+  logaritmos:       { expressions: [{latex:'\\ln(x)',color:'#818CF8'},{latex:'\\log_{10}(x)',color:'#F59E0B'}], description:'Logaritmo natural ln(x) e logaritmo de base 10 log(x). Ambos passam por (1,0).' },
+  func_logaritmica: { expressions: [{latex:'\\log_{2}(x)',color:'#818CF8'},{latex:'\\log_{10}(x)',color:'#F59E0B'},{latex:'\\ln(x)',color:'#10B981'}], description:'Funções logarítmicas com diferentes bases. Todas passam por (1,0) e são indefinidas para x≤0.' },
+  eq_logaritmica:   { expressions: [{latex:'\\log_{2}(x)',color:'#818CF8'},{latex:'y=3',color:'#F43F5E'}], description:'Solução de log₂(x)=3 é o ponto onde o gráfico intersecta a linha y=3 (x=8).' },
+  derivadas:        { expressions: [{latex:'x^2',color:'#818CF8'},{latex:'2x',color:'#F59E0B'}], description:'Função f(x)=x² (roxo) e a sua derivada f\'(x)=2x (dourado). A derivada representa o declive em cada ponto.' },
+  regras_derivacao: { expressions: [{latex:'x^3',color:'#818CF8'},{latex:'3x^2',color:'#F59E0B'},{latex:'6x',color:'#10B981'}], description:'f(x)=x³, f\'(x)=3x², f\'\'(x)=6x — primeira e segunda derivadas.' },
+  derivadas_transcendentes: { expressions: [{latex:'\\sin(x)',color:'#818CF8'},{latex:'\\cos(x)',color:'#F59E0B'}], description:'sin(x) e a sua derivada cos(x). Nota que cos(x) é zero onde sin(x) tem máximo ou mínimo.' },
+};
+
 function renderLearn(key) {
   const t = TOPICS[key];
   const panel = document.getElementById('learn-panel');
+  const graphData = TOPIC_GRAPHS[key];
+  const graphHTML = graphData ? `
+    <div class="section-heading">📈 Gráfico</div>
+    <div class="graph-container">
+      <div class="graph-label">📈 Gráfico Interactivo</div>
+      <div id="learn-graph" style="width:100%;height:300px;"></div>
+      <div class="graph-desc">${graphData.description}</div>
+    </div>` : '';
+
   panel.innerHTML = `<div class="content-card">
     <div class="topic-title">${t.title}</div>
     <div class="topic-subtitle">📚 ${['1º Trimestre','2º Trimestre','3º Trimestre'][t.trimester-1]}</div>
     <div class="section-heading">Teoria</div>
     ${t.content}
+    ${graphHTML}
     <div style="margin-top:28px;display:flex;gap:10px;flex-wrap:wrap;">
       <button class="act-btn active" onclick="setMode('practice')">✏️ Praticar este tópico →</button>
       <button class="act-btn" onclick="setMode('chat')">🤖 Perguntar ao professor IA</button>
     </div>
   </div>`;
   MathJax.typesetPromise([panel]).catch(()=>{});
+
+  // Renderiza gráfico Desmos se existir
+  if (graphData) {
+    setTimeout(() => {
+      const el = document.getElementById('learn-graph');
+      if (!el) return;
+      const calc = Desmos.GraphingCalculator(el, {
+        expressions: false, settingsMenu: false, zoomButtons: true,
+        border: false, backgroundColor: '#111F36',
+      });
+      graphData.expressions.forEach((expr, i) => {
+        calc.setExpression({ id: 'l'+i, latex: expr.latex, color: expr.color });
+      });
+    }, 100);
+  }
 }
 
 function updateProgress() {
