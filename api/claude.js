@@ -21,8 +21,8 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: userMessage }],
-        max_tokens: max_tokens || 1000,
-        temperature: 0.7
+        max_tokens: max_tokens || 1500,
+        temperature: 0.3
       })
     });
 
